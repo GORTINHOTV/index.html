@@ -6,7 +6,7 @@
     <title>GORDINHO TV - Sincronizada</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #000; color: white; min-height: 100vh; }
+        body { font-family: 'Segoe UI', sans-serif; background: #000; color: white; min-height: 100vh; overflow-x: hidden; }
         #loginScreen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
         .login-box { background: #141414; padding: 2rem; border-radius: 10px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #222; }
         input, select, textarea { width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: #333; border: none; color: white; border-radius: 5px; }
@@ -23,7 +23,12 @@
         .card-title { font-size: 1.1rem; font-weight: bold; }
         .card-meta { color: #e50914; font-size: 0.8rem; margin: 5px 0; }
         .play-btn { width: 100%; padding: 10px; background: white; color: black; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .del-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.7); border: none; color: white; padding: 5px; border-radius: 5px; cursor: pointer; }
+        .del-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.7); border: none; color: white; padding: 5px; border-radius: 5px; cursor: pointer; z-index: 10; }
+        
+        /* Estilo do Player de Vídeo */
+        #videoOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; flex-direction: column; }
+        .player-header { padding: 15px; background: #141414; display: flex; justify-content: space-between; align-items: center; }
+        iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
@@ -38,9 +43,11 @@
     </div>
 
     <div id="mainApp">
-        <header class="container">
-            <div style="font-size: 1.5rem; font-weight: bold; color:#e50914;">GORTINHO TV</div>
-            <button class="admin-only" onclick="document.getElementById('modal').style.display='flex'" style="background:#e50914; color:#fff; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">+ ADD FILME</button>
+        <header>
+            <div class="container">
+                <div style="font-size: 1.5rem; font-weight: bold; color:#e50914;">GORTINHO TV</div>
+                <button class="admin-only" onclick="document.getElementById('modal').style.display='flex'" style="background:#e50914; color:#fff; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">+ ADD FILME</button>
+            </div>
         </header>
         <div class="container"><div id="grid" class="grid"></div></div>
     </div>
@@ -55,6 +62,14 @@
             <button class="btn-red" onclick="salvarNoFirebase()">SALVAR NA NUVEM</button>
             <button onclick="document.getElementById('modal').style.display='none'" style="width:100%; background:none; color:gray; border:none; margin-top:10px; cursor:pointer;">Cancelar</button>
         </div>
+    </div>
+
+    <div id="videoOverlay">
+        <div class="player-header">
+            <span id="playingTitle" style="font-weight:bold;">Assistindo...</span>
+            <button onclick="fecharPlayer()" style="background:#e50914; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">FECHAR X</button>
+        </div>
+        <div id="playerContent" style="width:100%; height:100%;"></div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -116,13 +131,33 @@
                                     <div class="card-title">${m.title}</div>
                                     <div class="card-meta">⭐ ${m.rating}/10</div>
                                     <p style="font-size:0.8rem; color:#aaa;">${m.desc}</p>
-                                    <button class="play-btn" onclick="window.open('${m.url}', '_blank')">ASSISTIR AGORA</button>
+                                    <button class="play-btn" onclick="abrirPlayer('${m.url}', '${m.title}')">ASSISTIR AGORA</button>
                                 </div>
                             </div>
                         `;
                     });
                 }
             });
+        }
+
+        function abrirPlayer(url, titulo) {
+            let finalUrl = url;
+            // Se for link do Drive, transforma em modo preview pra esconder botões
+            if(url.includes('drive.google.com')) {
+                finalUrl = url.replace('/view', '/preview').replace('?usp=sharing', '').replace('?usp=drivesdk', '');
+            }
+
+            document.getElementById('playingTitle').innerText = titulo;
+            // O segredo do "sandbox" é que ele mata as funções extras do Google Drive
+            document.getElementById('playerContent').innerHTML = `
+                <iframe src="${finalUrl}" allow="autoplay" sandbox="allow-scripts allow-same-origin"></iframe>
+            `;
+            document.getElementById('videoOverlay').style.display = 'flex';
+        }
+
+        function fecharPlayer() {
+            document.getElementById('playerContent').innerHTML = "";
+            document.getElementById('videoOverlay').style.display = 'none';
         }
 
         function remover(id) {
