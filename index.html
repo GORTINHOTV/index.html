@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -16,16 +15,19 @@
         header { background: rgba(0,0,0,0.9); padding: 1rem 0; position: fixed; top: 0; width: 100%; z-index: 1000; border-bottom: 1px solid #333; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; display: flex; justify-content: space-between; align-items: center; }
         .admin-only { display: none !important; }
-        .is-admin .admin-only { display: block !important; }
+        .is-admin .admin-only { display: inline-block !important; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 20px 0; }
         .card { background: #181818; border-radius: 8px; overflow: hidden; position: relative; transition: 0.3s; border: 1px solid #222; }
-        .card:hover { transform: scale(1.05); }
         .card-info { padding: 15px; }
-        .card-title { font-size: 1.1rem; font-weight: bold; }
-        .card-meta { color: #e50914; font-size: 0.8rem; margin: 5px 0; }
         .play-btn { width: 100%; padding: 10px; background: white; color: black; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .del-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.7); border: none; color: white; padding: 5px; border-radius: 5px; cursor: pointer; z-index: 10; }
         
+        .user-list { margin-top: 15px; background: #222; border-radius: 5px; max-height: 250px; overflow-y: auto; text-align: left; padding: 10px; }
+        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333; font-size: 0.85rem; }
+        .user-info { display: flex; flex-direction: column; }
+        .status-on { color: #00ff00; font-size: 0.7rem; }
+        .status-off { color: #666; font-size: 0.7rem; }
+
         #videoOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; flex-direction: column; }
         .player-header { padding: 15px; background: #141414; display: flex; justify-content: space-between; align-items: center; }
         iframe { width: 100%; height: 100%; border: none; }
@@ -45,17 +47,51 @@
     <div id="mainApp">
         <header>
             <div class="container">
-                <div style="font-size: 1.5rem; font-weight: bold; color:#e50914;">GORDINHO TV</div>
-                <button class="admin-only" onclick="document.getElementById('modal').style.display='flex'" style="background:#e50914; color:#fff; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">+ ADD FILME</button>
+                <div style="font-size: 1.5rem; font-weight: bold; color:#e50914;">GORTINHO TV</div>
+                <div>
+                    <button class="admin-only" onclick="abrirModalUsers()" style="background:#333; color:#fff; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; margin-right:5px;">👥 USUÁRIOS</button>
+                    <button class="admin-only" onclick="document.getElementById('modal').style.display='flex'" style="background:#e50914; color:#fff; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">+ FILME</button>
+                    <button onclick="sair()" style="background:none; color:gray; border:none; padding:8px; cursor:pointer; font-size:0.8rem;">Sair</button>
+                </div>
             </div>
         </header>
         <div class="container"><div id="grid" class="grid"></div></div>
     </div>
 
+    <div id="modalUsers" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center;">
+        <div class="login-box" style="text-align: left; max-width: 450px;">
+            <h3 style="color:#e50914; margin-bottom:10px;">Gerenciar Acessos</h3>
+            <input type="text" id="newU" placeholder="Nome do Usuário">
+            <input type="text" id="newP" placeholder="Senha">
+            
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 0.7rem; color: #aaa;">Validade:</label>
+                    <select id="newT">
+                        <option value="1 dia">1 Dia</option>
+                        <option value="1 mês">1 Mês</option>
+                        <option value="1 ano">1 Ano</option>
+                        <option value="Personalizado">Personalizado</option>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 0.7rem; color: #aaa;">Limite de Telas:</label>
+                    <input type="number" id="newL" value="1" min="1" style="margin:0;">
+                </div>
+            </div>
+            
+            <input type="text" id="tPerso" placeholder="Tempo Personalizado" style="display:none;">
+
+            <button class="btn-red" onclick="salvarUsuario()">CRIAR ACESSO</button>
+            <div class="user-list" id="listaU"></div>
+            <button onclick="document.getElementById('modalUsers').style.display='none'" style="width:100%; background:none; color:gray; border:none; margin-top:10px; cursor:pointer;">Fechar</button>
+        </div>
+    </div>
+
     <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center;">
         <div class="login-box" style="text-align: left;">
             <h3 style="color:#e50914;">Novo Filme</h3>
-            <input type="text" id="fUrl" placeholder="Link do Filme (Google Drive/URL)">
+            <input type="text" id="fUrl" placeholder="Link do Filme">
             <input type="text" id="fTitle" placeholder="Título">
             <input type="number" id="fRating" placeholder="Nota (1-10)">
             <textarea id="fDesc" placeholder="Sinopse"></textarea>
@@ -91,17 +127,109 @@
 
         const ADMS = ["Miguel", "Brunno"];
         let userLogado = "";
+        let idSessao = "";
+
+        document.getElementById('newT').onchange = function() {
+            document.getElementById('tPerso').style.display = this.value === "Personalizado" ? "block" : "none";
+        };
 
         function entrar() {
             const u = document.getElementById('user').value;
             const p = document.getElementById('pass').value;
-            if(p === "260711" || p === "123") {
-                userLogado = u;
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('mainApp').style.display = 'block';
-                if(ADMS.includes(u)) document.getElementById('mainApp').classList.add('is-admin');
-                escutarBanco();
-            } else { alert("Senha incorreta!"); }
+
+            db.ref('usuarios').once('value', (snap) => {
+                const users = snap.val();
+                let userRef = null;
+                let userId = null;
+
+                if(users) {
+                    Object.keys(users).forEach(id => {
+                        if(users[id].nome === u && users[id].senha === p) {
+                            userRef = users[id];
+                            userId = id;
+                        }
+                    });
+                }
+
+                if(userRef) {
+                    const telasAtivas = userRef.onlineCount || 0;
+                    const limite = parseInt(userRef.limite) || 1;
+
+                    if(telasAtivas >= limite && !ADMS.includes(u)) {
+                        alert("Limite de " + limite + " tela(s) atingido!");
+                        return;
+                    }
+
+                    userLogado = u;
+                    idSessao = userId;
+                    db.ref('usuarios/' + userId).update({ onlineCount: telasAtivas + 1 });
+                    carregarApp();
+                } else if(p === "260711" || p === "123") {
+                    userLogado = u;
+                    carregarApp();
+                } else { alert("Senha incorreta!"); }
+            });
+        }
+
+        function carregarApp() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            if(ADMS.includes(userLogado)) document.getElementById('mainApp').classList.add('is-admin');
+            escutarBanco();
+        }
+
+        function sair() {
+            if(idSessao) {
+                db.ref('usuarios/' + idSessao).once('value', (s) => {
+                    const count = s.val().onlineCount || 1;
+                    db.ref('usuarios/' + idSessao).update({ onlineCount: Math.max(0, count - 1) });
+                    location.reload();
+                });
+            } else { location.reload(); }
+        }
+
+        function salvarUsuario() {
+            const nome = document.getElementById('newU').value;
+            const senha = document.getElementById('newP').value;
+            const limite = document.getElementById('newL').value;
+            const tempoSel = document.getElementById('newT').value;
+            const tempo = tempoSel === "Personalizado" ? document.getElementById('tPerso').value : tempoSel;
+
+            if(nome && senha) {
+                db.ref('usuarios').push({ nome, senha, tempo, limite, onlineCount: 0 });
+                alert("Usuário Criado!");
+                document.getElementById('newU').value = "";
+                document.getElementById('newP').value = "";
+            }
+        }
+
+        function abrirModalUsers() {
+            document.getElementById('modalUsers').style.display = 'flex';
+            db.ref('usuarios').on('value', (snap) => {
+                const lista = document.getElementById('listaU');
+                lista.innerHTML = "";
+                const data = snap.val();
+                if(data) {
+                    Object.keys(data).forEach(id => {
+                        lista.innerHTML += `
+                            <div class="user-item">
+                                <div class="user-info">
+                                    <strong>${data[id].nome}</strong>
+                                    <span style="font-size:0.7rem; color:#aaa;">Expira: ${data[id].tempo}</span>
+                                    <span class="${data[id].onlineCount > 0 ? 'status-on' : 'status-off'}">
+                                        Telas: ${data[id].onlineCount || 0} / ${data[id].limite || 1}
+                                    </span>
+                                </div>
+                                <button onclick="removerU('${id}')" style="background:none; border:none; color:#e50914; cursor:pointer;">Excluir</button>
+                            </div>
+                        `;
+                    });
+                }
+            });
+        }
+
+        function removerU(id) {
+            if(confirm("Remover usuário?")) db.ref('usuarios/' + id).remove();
         }
 
         function salvarNoFirebase() {
@@ -143,13 +271,20 @@
         function abrirPlayer(url, titulo) {
             let finalUrl = url;
             if(url.includes('drive.google.com')) {
-                finalUrl = url.replace('/view', '/preview').replace('?usp=sharing', '').replace('?usp=drivesdk', '');
+                // Força o modo preview para o Drive
+                finalUrl = url.replace('/view', '/preview');
             }
-
+            
             document.getElementById('playingTitle').innerText = titulo;
+            
+            // O sandbox bloqueia downloads e saídas externas do iframe
             document.getElementById('playerContent').innerHTML = `
-                <iframe src="${finalUrl}" allow="autoplay; fullscreen" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"></iframe>
-            `;
+                <iframe 
+                    src="${finalUrl}" 
+                    allow="autoplay; fullscreen" 
+                    allowfullscreen 
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-presentation">
+                </iframe>`;
             
             document.getElementById('videoOverlay').style.display = 'flex';
         }
@@ -160,7 +295,7 @@
         }
 
         function remover(id) {
-            if(confirm("Apagar filme para todos?")) db.ref('filmes/' + id).remove();
+            if(confirm("Apagar filme?")) db.ref('filmes/' + id).remove();
         }
     </script>
 </body>
