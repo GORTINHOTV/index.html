@@ -150,8 +150,8 @@
             document.getElementById('playingTitle').innerText = titulo;
             // O segredo do "sandbox" é que ele mata as funções extras do Google Drive
             document.getElementById('playerContent').innerHTML = `
-                <iframe src="${finalUrl}" allow="autoplay" sandbox="allow-scripts allow-same-origin"></iframe>
-            `;
+                <iframe src="${finalUrl}" allow="autoplay; fullscreen" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+                
             document.getElementById('videoOverlay').style.display = 'flex';
         }
 
