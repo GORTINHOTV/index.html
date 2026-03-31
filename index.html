@@ -73,26 +73,20 @@
             <h3 style="color:#e50914; margin-bottom:10px;">Gerenciar Acessos</h3>
             <input type="text" id="newU" placeholder="Nome do Usuário">
             <input type="text" id="newP" placeholder="Senha">
-            
             <div style="display: flex; gap: 10px;">
                 <input type="number" id="timeVal" placeholder="Valor" style="flex: 1;">
                 <select id="timeUnit" style="flex: 1.5;">
-                    <option value="seg">Segundos</option>
                     <option value="min">Minutos</option>
                     <option value="hor">Horas</option>
-                    <option value="dia">Dias</option>
-                    <option value="mes">Meses (30d)</option>
-                    <option value="ano">Anos (365d)</option>
+                    <option value="dia" selected>Dias</option>
+                    <option value="mes">Meses</option>
                 </select>
             </div>
-            
             <input type="number" id="newLimit" placeholder="Limite de Telas" value="1">
-
             <div id="admToggleOption" style="display:none; margin: 10px 0; align-items: center; gap: 10px; font-size: 0.9rem;">
                 <input type="checkbox" id="isAdmCheck" style="width: 20px; height: 20px;"> 
                 <span>Dar acesso de Administrador?</span>
             </div>
-
             <button class="btn-red" onclick="salvarUsuario()">CRIAR ACESSO</button>
             <div class="user-list" id="listaU"></div>
             <button onclick="fecharModalUsers()" style="width:100%; background:none; color:gray; border:none; margin-top:10px; cursor:pointer;">Fechar</button>
@@ -140,13 +134,13 @@
         let idSessao = "";
         let timerPainel = null;
 
-                function entrar() {
-            const u = document.getElementById('user').value;
-            const p = document.getElementById('pass').value;
+        function entrar() {
+            const u = document.getElementById('user').value.trim();
+            const p = document.getElementById('pass').value.trim();
 
             if (u === "Miguel" && (p === "260711" || p === "123")) {
-                userLogado = u; 
-                carregarApp(true); 
+                userLogado = "Miguel";
+                carregarApp(true);
                 return;
             }
 
@@ -155,55 +149,51 @@
                 let uId = null;
                 let dadosUser = null;
 
-                if(users) {
-                    Object.keys(users).forEach(id => {
-                        if(users[id].nome === u && users[id].senha === p) {
-                            uId = id;
-                            dadosUser = users[id];
+                if (users) {
+                    Object.keys(users).forEach(key => {
+                        if (users[key].nome === u && users[key].senha === p) {
+                            uId = key;
+                            dadosUser = users[key];
                         }
                     });
                 }
 
-                if(uId && dadosUser) {
-                    if(Date.now() > dadosUser.expiraEm) { 
-                        alert("Acesso expirado!"); 
-                        return; 
-                    }
-                    
-                    if(dadosUser.telasAtivas >= dadosUser.limiteTelas) {
-                        alert("Limite de telas atingido!");
+                if (uId && dadosUser) {
+                    if (Date.now() > dadosUser.expiraEm) {
+                        alert("Acesso expirado!");
                         return;
                     }
 
-                    const meuToken = Date.now().toString();
-                    idSessao = uId;
                     userLogado = u;
-                    sessionStorage.setItem('meuToken', meuToken);
+                    idSessao = uId;
+                    const token = Date.now().toString();
+                    sessionStorage.setItem('meuToken', token);
 
-                    db.ref('usuarios/' + uId).update({ 
-                        online: true, 
+                    // Tenta atualizar, mas ignora se falhar
+                    db.ref('usuarios/' + uId).update({
+                        online: true,
                         telasAtivas: (dadosUser.telasAtivas || 0) + 1,
-                        sessionToken: meuToken
-                    });
+                        sessionToken: token
+                    }).catch(e => console.warn("Erro ao atualizar status online"));
 
                     carregarApp(dadosUser.isAdmin);
                     verificarStatusSessao();
-                } else { 
-                    alert("Login inválido!"); 
+                } else {
+                    alert("Usuário ou senha incorretos!");
                 }
             }).catch(e => {
-                console.error("Erro ao conectar:", e);
-                alert("Erro na rede ou banco de dados.");
+                console.error(e);
+                alert("Erro de conexão com o banco de dados!");
             });
         }
-        
+
         function verificarStatusSessao() {
             if(!idSessao) return;
             db.ref('usuarios/' + idSessao).on('value', snap => {
                 const user = snap.val();
                 const meuToken = sessionStorage.getItem('meuToken');
-                if (!user || user.sessionToken !== meuToken) {
-                    alert("Sessão encerrada pelo administrador.");
+                if (!user || (user.sessionToken && user.sessionToken !== meuToken)) {
+                    alert("Sessão encerrada.");
                     location.reload();
                 }
             });
@@ -226,7 +216,7 @@
                         online: false, 
                         telasAtivas: novasTelas,
                         sessionToken: null 
-                    }).then(() => location.reload());
+                    }).then(() => location.reload()).catch(() => location.reload());
                 });
             } else location.reload();
         }
@@ -246,9 +236,16 @@
             if(unit === "hor") ms *= 3600;
             if(unit === "dia") ms *= 86400;
             if(unit === "mes") ms *= 86400 * 30;
-            if(unit === "ano") ms *= 86400 * 365;
 
-            db.ref('usuarios').push({ nome, senha, expiraEm: Date.now() + ms, online: false, isAdmin, limiteTelas: limit, telasAtivas: 0, sessionToken: null });
+            db.ref('usuarios').push({ 
+                nome, senha, 
+                expiraEm: Date.now() + ms, 
+                online: false, 
+                isAdmin, 
+                limiteTelas: limit, 
+                telasAtivas: 0, 
+                sessionToken: null 
+            });
             alert("Acesso Criado!");
             document.getElementById('newU').value = ""; document.getElementById('newP').value = "";
         }
@@ -256,13 +253,12 @@
         function formatarTempo(ms) {
             if(ms <= 0) return "EXPIRADO";
             let s = Math.floor(ms / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
-            return `${String(d).padStart(2,'0')}D ${String(h % 24).padStart(2,'0')}H ${String(m % 60).padStart(2,'0')}M ${String(s % 60).padStart(2,'0')}S`;
+            return `${d}D ${h%24}H ${m%60}M`;
         }
 
         function abrirModalUsers() {
             document.getElementById('modalUsers').style.display = 'flex';
             if(timerPainel) clearInterval(timerPainel);
-            
             timerPainel = setInterval(() => {
                 db.ref('usuarios').once('value', (snap) => {
                     const lista = document.getElementById('listaU');
@@ -272,53 +268,25 @@
                         Object.keys(data).forEach(id => {
                             const tempo = formatarTempo(data[id].expiraEm - Date.now());
                             const status = data[id].online ? 'online' : 'offline';
-                            const admTag = data[id].isAdmin ? '<span class="badge-adm">ADM</span>' : '';
-                            const contagemTelas = `(Telas ${data[id].telasAtivas || 0}/${data[id].limiteTelas || 1})`;
-                            
                             lista.innerHTML += `
                                 <div class="user-item">
-                                    <div>
-                                        <span class="status-dot ${status}"></span>
-                                        <strong>${data[id].nome}</strong>${admTag}<br>
-                                        <span class="time-counter">${tempo} ${contagemTelas}</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; gap:5px;">
-                                        <button onclick="forcarLogout('${id}')" style="color:orange; background:none; border:none; cursor:pointer; font-size:0.7rem; text-decoration:underline;">Zerar e Desconectar</button>
-                                        <button onclick="excluirUsuario('${id}')" style="color:red; background:none; border:none; cursor:pointer; font-weight:bold;">Remover</button>
-                                    </div>
+                                    <div><span class="status-dot ${status}"></span><strong>${data[id].nome}</strong><br><small>${tempo}</small></div>
+                                    <button onclick="db.ref('usuarios/${id}').remove()" style="color:red; background:none; border:none; cursor:pointer;">Remover</button>
                                 </div>`;
                         });
                     }
                 });
-            }, 1000);
-        }
-
-        function forcarLogout(id) {
-            db.ref('usuarios/' + id).update({ telasAtivas: 0, online: false, sessionToken: "EXPULSO_" + Date.now() });
-        }
-
-        function excluirUsuario(id) {
-            if(confirm("Deseja excluir e desconectar este usuário?")) {
-                db.ref('usuarios/' + id).remove();
-            }
+            }, 2000);
         }
 
         function fecharModalUsers() { document.getElementById('modalUsers').style.display = 'none'; clearInterval(timerPainel); }
 
         function abrirPlayer(url, titulo) {
             let finalUrl = url;
-            
-            // CONVERSÃO STREAMTAPE
-            if(url.includes('streamtape.com')) {
-                finalUrl = url.replace('/v/', '/e/').split('?')[0];
-            }
-            // CONVERSÃO GOOGLE DRIVE
-            if(url.includes('drive.google.com')) {
-                finalUrl = url.replace('/view', '/preview');
-            }
+            if(url.includes('streamtape.com')) finalUrl = url.replace('/v/', '/e/').split('?')[0];
+            if(url.includes('drive.google.com')) finalUrl = url.replace('/view', '/preview');
 
             document.getElementById('playingTitle').innerText = titulo;
-            // REMOVIDO SANDBOX PARA STREAMTAPE FUNCIONAR MELHOR
             document.getElementById('playerContent').innerHTML = `<iframe src="${finalUrl}" allow="autoplay; fullscreen" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>`;
             document.getElementById('videoOverlay').style.display = 'flex';
         }
