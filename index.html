@@ -140,50 +140,63 @@
         let idSessao = "";
         let timerPainel = null;
 
-        function entrar() {
+                function entrar() {
             const u = document.getElementById('user').value;
             const p = document.getElementById('pass').value;
 
-            // REMOVIDO BRUNNO - APENAS MIGUEL ADM FIXO
             if (u === "Miguel" && (p === "260711" || p === "123")) {
-                userLogado = u; carregarApp(true); return;
+                userLogado = u; 
+                carregarApp(true); 
+                return;
             }
 
-            db.ref('usuarios').once('value', (snap) => {
+            db.ref('usuarios').once('value').then((snap) => {
                 const users = snap.val();
                 let uId = null;
+                let dadosUser = null;
+
                 if(users) {
                     Object.keys(users).forEach(id => {
-                        if(users[id].nome === u && users[id].senha === p) uId = id;
+                        if(users[id].nome === u && users[id].senha === p) {
+                            uId = id;
+                            dadosUser = users[id];
+                        }
                     });
                 }
 
-                if(uId) {
-                    const user = users[uId];
-                    if(Date.now() > user.expiraEm) { alert("Acesso expirado!"); return; }
+                if(uId && dadosUser) {
+                    if(Date.now() > dadosUser.expiraEm) { 
+                        alert("Acesso expirado!"); 
+                        return; 
+                    }
                     
-                    if(user.telasAtivas >= user.limiteTelas) {
-                        alert("Limite de telas atingido! Deslogue de outro dispositivo.");
+                    if(dadosUser.telasAtivas >= dadosUser.limiteTelas) {
+                        alert("Limite de telas atingido!");
                         return;
                     }
 
                     const meuToken = Date.now().toString();
                     idSessao = uId;
+                    userLogado = u;
                     sessionStorage.setItem('meuToken', meuToken);
 
                     db.ref('usuarios/' + uId).update({ 
                         online: true, 
-                        telasAtivas: (user.telasAtivas || 0) + 1,
+                        telasAtivas: (dadosUser.telasAtivas || 0) + 1,
                         sessionToken: meuToken
                     });
 
-                    carregarApp(user.isAdmin);
+                    carregarApp(dadosUser.isAdmin);
                     verificarStatusSessao();
-                } else { alert("Login inválido!"); }
+                } else { 
+                    alert("Login inválido!"); 
+                }
+            }).catch(e => {
+                console.error("Erro ao conectar:", e);
+                alert("Erro na rede ou banco de dados.");
             });
         }
-
-        // VIGIA SE O USUÁRIO FOI EXPULSO OU EXCLUÍDO
+        
         function verificarStatusSessao() {
             if(!idSessao) return;
             db.ref('usuarios/' + idSessao).on('value', snap => {
@@ -294,9 +307,19 @@
 
         function abrirPlayer(url, titulo) {
             let finalUrl = url;
-            if(url.includes('drive.google.com')) finalUrl = url.replace('/view', '/preview');
+            
+            // CONVERSÃO STREAMTAPE
+            if(url.includes('streamtape.com')) {
+                finalUrl = url.replace('/v/', '/e/').split('?')[0];
+            }
+            // CONVERSÃO GOOGLE DRIVE
+            if(url.includes('drive.google.com')) {
+                finalUrl = url.replace('/view', '/preview');
+            }
+
             document.getElementById('playingTitle').innerText = titulo;
-            document.getElementById('playerContent').innerHTML = `<iframe src="${finalUrl}" allow="autoplay; fullscreen" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"></iframe>`;
+            // REMOVIDO SANDBOX PARA STREAMTAPE FUNCIONAR MELHOR
+            document.getElementById('playerContent').innerHTML = `<iframe src="${finalUrl}" allow="autoplay; fullscreen" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>`;
             document.getElementById('videoOverlay').style.display = 'flex';
         }
 
