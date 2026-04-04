@@ -7,11 +7,14 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #000; color: white; min-height: 100vh; overflow-x: hidden; }
+        
+        /* LOGIN */
         #loginScreen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
         .login-box { background: #141414; padding: 2rem; border-radius: 10px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #222; }
         input, select, textarea { width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: #333; border: none; color: white; border-radius: 5px; }
         .btn-red { width: 100%; padding: 1rem; background: #e50914; border: none; color: white; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 10px; }
         
+        /* APP PRINCIPAL */
         #mainApp { display: none; padding-top: 140px; }
         header { background: rgba(0,0,0,0.95); padding: 1rem 0; position: fixed; top: 0; width: 100%; z-index: 1000; border-bottom: 1px solid #333; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
@@ -31,10 +34,16 @@
         .play-btn { width: 100%; padding: 10px; background: white; color: black; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .del-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.7); border: none; color: white; padding: 5px; border-radius: 5px; cursor: pointer; z-index: 10; }
         
-        /* Estilos do Painel de Usuários */
+        /* MODAL EPISÓDIOS (AGORA VERMELHO) */
+        #modalEpisodios { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.98); z-index:4000; flex-direction:column; }
+        .ep-header { background: #e50914; padding: 15px; text-align: center; position: relative; }
+        .ep-list-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #222; cursor: pointer; transition: 0.2s; }
+        .ep-list-item:hover { background: #1a1a1a; }
+        .play-icon { width: 35px; height: 35px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; margin-right: 15px; font-size: 0.8rem; }
+
+        /* OUTROS */
         .user-list { margin-top: 15px; background: #222; border-radius: 5px; max-height: 300px; overflow-y: auto; text-align: left; padding: 10px; }
         .user-item { padding: 10px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-
         #videoOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; flex-direction: column; }
         .player-header { padding: 15px; background: #141414; display: flex; justify-content: space-between; align-items: center; }
         iframe { width: 100%; height: 100%; border: none; }
@@ -74,6 +83,19 @@
         <div class="container"><div id="grid" class="grid"></div></div>
     </div>
 
+    <div id="modalEpisodios">
+        <div class="ep-header">
+            <h2 id="nomeSerieModal">NOME DA SÉRIE</h2>
+            <button onclick="fecharModalEps()" style="position:absolute; right:15px; top:12px; background:none; border:none; color:white; font-size:1.8rem; cursor:pointer;">&times;</button>
+        </div>
+        <div style="padding:10px; background:#111; display:flex; justify-content:center; border-bottom: 1px solid #222;">
+            <select id="selectTemporada" onchange="atualizarListaEps()" style="width:auto; min-width:200px; background:#222; border:1px solid #444; font-weight:bold;">
+                </select>
+        </div>
+        <div id="listaEpsContiner" style="flex:1; overflow-y:auto; background:#000;">
+            </div>
+    </div>
+
     <div id="modalUsers" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center;">
         <div class="login-box" style="text-align: left; max-width: 450px;">
             <h3 style="color:#e50914; margin-bottom:10px;">Gerenciar Acessos</h3>
@@ -101,32 +123,27 @@
     <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center;">
         <div class="login-box" style="text-align: left;">
             <h3 id="modalTitle" style="color:#e50914;">Novo Filme</h3>
-            
             <div style="display: flex; gap: 5px;">
                 <input type="text" id="tmdbSearch" placeholder="Busque pelo nome aqui...">
                 <button onclick="buscarNoTMDB()" style="background: #e50914; color: white; border: none; padding: 0 15px; border-radius: 5px; cursor: pointer;">🔍</button>
             </div>
             <div id="tmdbResults" style="display:none; background:#222; margin-top:2px; border-radius:5px; max-height:150px; overflow-y:auto; border:1px solid #444; font-size:0.8rem;"></div>
-
             <input type="text" id="fUrl" placeholder="Link do Filme/Série">
             <input type="text" id="fTitle" placeholder="Título">
-            
             <div id="extraSerie" style="display:none; gap:10px;">
                 <input type="number" id="fEp" placeholder="Episódio">
                 <input type="number" id="fTemp" placeholder="Temporada">
             </div>
-
             <input type="hidden" id="fPoster">
             <input type="number" id="fRating" placeholder="Nota (1-10)">
             <textarea id="fDesc" placeholder="Sinopse"></textarea>
-            
             <button class="btn-red" onclick="salvarNoFirebase()">SALVAR NA NUVEM</button>
             <button onclick="fecharModalAdd()" style="width:100%; background:none; color:gray; border:none; margin-top:10px; cursor:pointer;">Cancelar</button>
         </div>
     </div>
 
-    <div id="videoOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; flex-direction: column;">
-        <div class="player-header" style="padding: 15px; background: #141414; display: flex; justify-content: space-between; align-items: center;">
+    <div id="videoOverlay">
+        <div class="player-header">
             <span id="playingTitle" style="font-weight:bold;">Assistindo...</span>
             <button onclick="fecharPlayer()" style="background:#e50914; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">FECHAR X</button>
         </div>
@@ -154,16 +171,15 @@
         let userLogado = "";
         let categoriaAtual = "filme";
         let timerPainel = null;
+        let todosEpsDaSerie = [];
 
         function mudarCategoria(cat) {
             categoriaAtual = cat;
             document.getElementById('catFilme').classList.toggle('cat-active', cat === 'filme');
             document.getElementById('catSerie').classList.toggle('cat-active', cat === 'serie');
-            
             const btnAdd = document.getElementById('btnAddMain');
             const modalTitle = document.getElementById('modalTitle');
             const extraSerie = document.getElementById('extraSerie');
-
             if(cat === 'serie') {
                 btnAdd.innerText = "+ ADD SÉRIE";
                 modalTitle.innerText = "Nova Série";
@@ -190,12 +206,11 @@
                         const dataLancamento = f.release_date || f.first_air_date || "";
                         const ano = dataLancamento ? ` (${dataLancamento.split('-')[0]})` : "";
                         const nomeCompleto = (f.title || f.name) + ano;
-
                         const item = document.createElement('div');
                         item.style = "padding:10px; border-bottom:1px solid #333; cursor:pointer;";
                         item.innerHTML = `<strong>${nomeCompleto}</strong>`;
                         item.onclick = () => {
-                            document.getElementById('fTitle').value = nomeCompleto;
+                            document.getElementById('fTitle').value = (f.title || f.name);
                             document.getElementById('fRating').value = f.vote_average ? f.vote_average.toFixed(1) : "0";
                             document.getElementById('fDesc').value = f.overview;
                             document.getElementById('fPoster').value = f.poster_path ? `https://image.tmdb.org/t/p/w500${f.poster_path}` : "";
@@ -235,35 +250,95 @@
             escutarBanco();
         }
 
-        // --- LÓGICA DE USUÁRIOS ---
+        function escutarBanco() {
+            const termo = document.getElementById('searchBar').value.toLowerCase();
+            db.ref('filmes').on('value', (snap) => {
+                const grid = document.getElementById('grid');
+                grid.innerHTML = "";
+                const data = snap.val();
+                if(data) {
+                    const seriesJaAdd = [];
+                    Object.values(data).reverse().forEach(m => {
+                        const tipoItem = m.tipo || "filme";
+                        const tituloNormal = m.title.toLowerCase();
+                        if(termo !== "" && !tituloNormal.includes(termo)) return;
+                        if(termo === "" && tipoItem !== categoriaAtual) return;
+
+                        if(tipoItem === 'serie') {
+                            if(seriesJaAdd.includes(m.title)) return;
+                            seriesJaAdd.push(m.title);
+                        }
+
+                        grid.innerHTML += `
+                            <div class="card">
+                                ${(userLogado === "Miguel") ? `<button class="del-btn" onclick="db.ref('filmes/${m.id}').remove()">Excluir</button>` : ''}
+                                <div style="height:150px; background: url('${m.poster || ''}') center/cover no-repeat; background-color:#222; display:flex; align-items:center; justify-content:center;">
+                                    ${!m.poster ? '🎬' : ''}
+                                </div>
+                                <div class="card-info">
+                                    <div class="card-title">${m.title}</div>
+                                    <div style="font-size:0.8rem; color:#e50914; font-weight:bold;">
+                                        ${tipoItem === 'serie' ? 'SÉRIE' : `⭐ ${m.rating}/10`}
+                                    </div>
+                                    <p style="font-size:0.8rem; color:#aaa; margin-top:5px;">${m.desc}</p>
+                                    <button class="play-btn" onclick="${tipoItem === 'serie' ? `abrirListaEps('${m.title}')` : `abrirPlayer('${m.url}', '${m.title}')`}">
+                                        ${tipoItem === 'serie' ? 'VER EPISÓDIOS' : 'ASSISTIR AGORA'}
+                                    </button>
+                                </div>
+                            </div>`;
+                    });
+                }
+            });
+        }
+
+        function abrirListaEps(nomeSerie) {
+            document.getElementById('nomeSerieModal').innerText = nomeSerie.toUpperCase();
+            document.getElementById('modalEpisodios').style.display = 'flex';
+            db.ref('filmes').once('value', (snap) => {
+                const data = snap.val();
+                if(!data) return;
+                todosEpsDaSerie = Object.values(data).filter(item => item.tipo === 'serie' && item.title === nomeSerie);
+                const temps = [...new Set(todosEpsDaSerie.map(item => item.temp))].sort((a,b) => a-b);
+                const select = document.getElementById('selectTemporada');
+                select.innerHTML = "";
+                temps.forEach(t => { select.innerHTML += `<option value="${t}">TEMPORADA ${t}</option>`; });
+                atualizarListaEps();
+            });
+        }
+
+        function atualizarListaEps() {
+            const tempEscolhida = document.getElementById('selectTemporada').value;
+            const container = document.getElementById('listaEpsContiner');
+            container.innerHTML = "";
+            const epsFiltrados = todosEpsDaSerie.filter(e => e.temp == tempEscolhida).sort((a, b) => a.ep - b.ep);
+            epsFiltrados.forEach(e => {
+                container.innerHTML += `
+                    <div class="ep-list-item" onclick="abrirPlayer('${e.url}', '${e.title} - T${e.temp} E${e.ep}')">
+                        <div class="play-icon">▶</div>
+                        <div>
+                            <div style="font-weight:bold;">Episódio ${String(e.ep).padStart(2, '0')}</div>
+                            <div style="font-size:0.7rem; color:gray;">Toque para reproduzir</div>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function fecharModalEps() { document.getElementById('modalEpisodios').style.display = 'none'; }
+        
         function salvarUsuario() {
             const nome = document.getElementById('newU').value;
             const senha = document.getElementById('newP').value;
             const val = parseInt(document.getElementById('timeVal').value);
             const unit = document.getElementById('timeUnit').value;
             if(!nome || !senha || isNaN(val)) return alert("Preencha tudo!");
-            
             let ms = val * 1000;
             if(unit === "min") ms *= 60;
             if(unit === "hor") ms *= 3600;
             if(unit === "dia") ms *= 86400;
             if(unit === "mes") ms *= 86400 * 30;
-
-            db.ref('usuarios').push({ 
-                nome, 
-                senha, 
-                expiraEm: Date.now() + ms, 
-                isAdmin: document.getElementById('isAdmCheck').checked 
-            });
+            db.ref('usuarios').push({ nome, senha, expiraEm: Date.now() + ms, isAdmin: document.getElementById('isAdmCheck').checked });
             alert("Acesso Criado!");
-            document.getElementById('newU').value = "";
-            document.getElementById('newP').value = "";
-        }
-
-        function formatarTempo(ms) {
-            if(ms <= 0) return "EXPIRADO";
-            let s = Math.floor(ms / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
-            return `${d}D ${h%24}H ${m%60}M`;
+            document.getElementById('newU').value = ""; document.getElementById('newP').value = "";
         }
 
         function abrirModalUsers() {
@@ -276,14 +351,12 @@
                     const data = snap.val();
                     if(data) {
                         Object.keys(data).forEach(id => {
-                            const tempo = formatarTempo(data[id].expiraEm - Date.now());
+                            let ms = data[id].expiraEm - Date.now();
+                            let tempo = ms <= 0 ? "EXPIRADO" : `${Math.floor(ms/86400000)}D ${Math.floor((ms%86400000)/3600000)}H`;
                             lista.innerHTML += `
                                 <div class="user-item">
-                                    <div>
-                                        <strong>${data[id].nome}</strong> ${data[id].isAdmin ? '<span style="color:gold; font-size:10px;">[ADM]</span>' : ''}<br>
-                                        <small style="color:gray;">${tempo}</small>
-                                    </div>
-                                    <button onclick="db.ref('usuarios/${id}').remove()" style="color:red; background:none; border:none; cursor:pointer; font-weight:bold;">Remover</button>
+                                    <div><strong>${data[id].nome}</strong><br><small>${tempo}</small></div>
+                                    <button onclick="db.ref('usuarios/${id}').remove()" style="color:red; background:none; border:none; cursor:pointer;">Remover</button>
                                 </div>`;
                         });
                     }
@@ -291,44 +364,7 @@
             }, 1500);
         }
 
-        function fecharModalUsers() { 
-            document.getElementById('modalUsers').style.display = 'none'; 
-            clearInterval(timerPainel); 
-        }
-
-        // --- RESTO DO CÓDIGO ---
-        function escutarBanco() {
-            const termo = document.getElementById('searchBar').value.toLowerCase();
-            db.ref('filmes').on('value', (snap) => {
-                const grid = document.getElementById('grid');
-                grid.innerHTML = "";
-                const data = snap.val();
-                if(data) {
-                    Object.values(data).reverse().forEach(m => {
-                        const tipoItem = m.tipo || "filme";
-                        const titulo = m.title.toLowerCase();
-                        if(termo !== "" && !titulo.includes(termo)) return;
-                        if(termo === "" && tipoItem !== categoriaAtual) return;
-
-                        grid.innerHTML += `
-                            <div class="card">
-                                ${(userLogado === "Miguel") ? `<button class="del-btn" onclick="db.ref('filmes/${m.id}').remove()">Excluir</button>` : ''}
-                                <div style="height:150px; background: url('${m.poster || ''}') center/cover no-repeat; background-color:#222; display:flex; align-items:center; justify-content:center;">
-                                    ${!m.poster ? '🎬' : ''}
-                                </div>
-                                <div class="card-info">
-                                    <div class="card-title">${m.title}</div>
-                                    <div style="font-size:0.8rem; color:#e50914; font-weight:bold;">
-                                        ${m.tipo === 'serie' ? `Ep: ${m.ep} | Temp: ${m.temp}` : `⭐ ${m.rating}/10`}
-                                    </div>
-                                    <p style="font-size:0.8rem; color:#aaa; margin-top:5px;">${m.desc}</p>
-                                    <button class="play-btn" onclick="abrirPlayer('${m.url}', '${m.title}')">ASSISTIR AGORA</button>
-                                </div>
-                            </div>`;
-                    });
-                }
-            });
-        }
+        function fecharModalUsers() { document.getElementById('modalUsers').style.display = 'none'; clearInterval(timerPainel); }
 
         function salvarNoFirebase() {
             const movie = { 
@@ -349,28 +385,23 @@
         }
 
         function fecharModalAdd() {
-    // Esconde os modais e resultados da busca
-    document.getElementById('modal').style.display = 'none';
-    document.getElementById('tmdbResults').style.display = 'none';
-    
-    // Limpa os campos para não aparecerem na próxima vez que abrir
-    document.getElementById('tmdbSearch').value = "";
-    document.getElementById('fTitle').value = "";
-    document.getElementById('fUrl').value = "";
-    document.getElementById('fRating').value = "";
-    document.getElementById('fDesc').value = "";
-    document.getElementById('fPoster').value = "";
-    
-    // Limpa campos de série se existirem
-    if(document.getElementById('fEp')) document.getElementById('fEp').value = "";
-    if(document.getElementById('fTemp')) document.getElementById('fTemp').value = "";
-}
+            document.getElementById('modal').style.display = 'none';
+            document.getElementById('tmdbResults').style.display = 'none';
+            document.getElementById('tmdbSearch').value = "";
+            document.getElementById('fTitle').value = "";
+            document.getElementById('fUrl').value = "";
+            document.getElementById('fRating').value = "";
+            document.getElementById('fDesc').value = "";
+            document.getElementById('fPoster').value = "";
+            if(document.getElementById('fEp')) document.getElementById('fEp').value = "";
+            if(document.getElementById('fTemp')) document.getElementById('fTemp').value = "";
+        }
 
         function abrirPlayer(url, titulo) {
             let finalUrl = url;
             if(url.includes('streamtape.com')) finalUrl = url.replace('/v/', '/e/').split('?')[0];
             document.getElementById('playingTitle').innerText = titulo;
-            document.getElementById('playerContent').innerHTML = `<iframe src="${finalUrl}" allow="autoplay; fullscreen" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>`;
+            document.getElementById('playerContent').innerHTML = `<iframe src="${finalUrl}" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
             document.getElementById('videoOverlay').style.display = 'flex';
         }
 
