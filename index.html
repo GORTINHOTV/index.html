@@ -32,16 +32,19 @@
         .card { background: #181818; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #222; }
         .card-info { padding: 15px; }
         .play-btn { width: 100%; padding: 10px; background: white; color: black; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .del-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.7); border: none; color: white; padding: 5px; border-radius: 5px; cursor: pointer; z-index: 10; }
         
-        /* MODAL EPISÓDIOS (AGORA VERMELHO) */
+        /* BOTÕES ADMIN NO CARD */
+        .admin-btns { position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 10; }
+        .del-btn { background: rgba(255,0,0,0.8); border: none; color: white; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 0.7rem; }
+        .edit-btn { background: rgba(255,165,0,0.8); border: none; color: white; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 0.7rem; }
+        
+        /* MODAL EPISÓDIOS */
         #modalEpisodios { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.98); z-index:4000; flex-direction:column; }
         .ep-header { background: #e50914; padding: 15px; text-align: center; position: relative; }
         .ep-list-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #222; cursor: pointer; transition: 0.2s; }
         .ep-list-item:hover { background: #1a1a1a; }
         .play-icon { width: 35px; height: 35px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; margin-right: 15px; font-size: 0.8rem; }
 
-        /* OUTROS */
         .user-list { margin-top: 15px; background: #222; border-radius: 5px; max-height: 300px; overflow-y: auto; text-align: left; padding: 10px; }
         .user-item { padding: 10px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
         #videoOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; flex-direction: column; }
@@ -92,8 +95,7 @@
             <select id="selectTemporada" onchange="atualizarListaEps()" style="width:auto; min-width:200px; background:#222; border:1px solid #444; font-weight:bold;">
                 </select>
         </div>
-        <div id="listaEpsContiner" style="flex:1; overflow-y:auto; background:#000;">
-            </div>
+        <div id="listaEpsContiner" style="flex:1; overflow-y:auto; background:#000;"></div>
     </div>
 
     <div id="modalUsers" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center;">
@@ -123,11 +125,14 @@
     <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center;">
         <div class="login-box" style="text-align: left;">
             <h3 id="modalTitle" style="color:#e50914;">Novo Filme</h3>
-            <div style="display: flex; gap: 5px;">
+            <div id="tmdbRow" style="display: flex; gap: 5px;">
                 <input type="text" id="tmdbSearch" placeholder="Busque pelo nome aqui...">
                 <button onclick="buscarNoTMDB()" style="background: #e50914; color: white; border: none; padding: 0 15px; border-radius: 5px; cursor: pointer;">🔍</button>
             </div>
             <div id="tmdbResults" style="display:none; background:#222; margin-top:2px; border-radius:5px; max-height:150px; overflow-y:auto; border:1px solid #444; font-size:0.8rem;"></div>
+            
+            <input type="hidden" id="fId">
+            
             <input type="text" id="fUrl" placeholder="Link do Filme/Série">
             <input type="text" id="fTitle" placeholder="Título">
             <div id="extraSerie" style="display:none; gap:10px;">
@@ -136,8 +141,8 @@
             </div>
             <input type="hidden" id="fPoster">
             <input type="number" id="fRating" placeholder="Nota (1-10)">
-            <textarea id="fDesc" placeholder="Sinopse"></textarea>
-            <button class="btn-red" onclick="salvarNoFirebase()">SALVAR NA NUVEM</button>
+            <textarea id="fDesc" placeholder="Sinopse" style="height: 100px;"></textarea>
+            <button class="btn-red" id="btnSalvarModal" onclick="salvarNoFirebase()">SALVAR NA NUVEM</button>
             <button onclick="fecharModalAdd()" style="width:100%; background:none; color:gray; border:none; margin-top:10px; cursor:pointer;">Cancelar</button>
         </div>
     </div>
@@ -271,7 +276,12 @@
 
                         grid.innerHTML += `
                             <div class="card">
-                                ${(userLogado === "Miguel") ? `<button class="del-btn" onclick="db.ref('filmes/${m.id}').remove()">Excluir</button>` : ''}
+                                ${(userLogado === "Miguel") ? `
+                                    <div class="admin-btns">
+                                        ${tipoItem === 'filme' ? `<button class="edit-btn" onclick="editarFilme('${m.id}')">Editar</button>` : ''}
+                                        <button class="del-btn" onclick="db.ref('filmes/${m.id}').remove()">Excluir</button>
+                                    </div>
+                                ` : ''}
                                 <div style="height:150px; background: url('${m.poster || ''}') center/cover no-repeat; background-color:#222; display:flex; align-items:center; justify-content:center;">
                                     ${!m.poster ? '🎬' : ''}
                                 </div>
@@ -291,12 +301,31 @@
             });
         }
 
+        // --- FUNÇÃO PARA CARREGAR EDIÇÃO ---
+        function editarFilme(id) {
+            db.ref('filmes/' + id).once('value').then(snap => {
+                const m = snap.val();
+                if(m) {
+                    document.getElementById('modal').style.display = 'flex';
+                    document.getElementById('modalTitle').innerText = "Editar Filme";
+                    document.getElementById('fId').value = id;
+                    document.getElementById('fTitle').value = m.title;
+                    document.getElementById('fUrl').value = m.url;
+                    document.getElementById('fRating').value = m.rating;
+                    document.getElementById('fDesc').value = m.desc;
+                    document.getElementById('fPoster').value = m.poster;
+                    document.getElementById('tmdbRow').style.display = "none"; // Esconde busca TMDB na edição
+                    document.getElementById('btnSalvarModal').innerText = "ATUALIZAR DADOS";
+                }
+            });
+        }
+
         function abrirListaEps(nomeSerie) {
             document.getElementById('nomeSerieModal').innerText = nomeSerie.toUpperCase();
             document.getElementById('modalEpisodios').style.display = 'flex';
             db.ref('filmes').once('value', (snap) => {
                 const data = snap.val();
-                if(!data) return;
+            if(!data) return;
                 todosEpsDaSerie = Object.values(data).filter(item => item.tipo === 'serie' && item.title === nomeSerie);
                 const temps = [...new Set(todosEpsDaSerie.map(item => item.temp))].sort((a,b) => a-b);
                 const select = document.getElementById('selectTemporada');
@@ -367,6 +396,7 @@
         function fecharModalUsers() { document.getElementById('modalUsers').style.display = 'none'; clearInterval(timerPainel); }
 
         function salvarNoFirebase() {
+            const idExistente = document.getElementById('fId').value;
             const movie = { 
                 title: document.getElementById('fTitle').value, 
                 url: document.getElementById('fUrl').value, 
@@ -374,7 +404,7 @@
                 desc: document.getElementById('fDesc').value, 
                 poster: document.getElementById('fPoster').value || "",
                 tipo: categoriaAtual,
-                id: Date.now() 
+                id: idExistente ? idExistente : Date.now() // Usa o ID antigo se for edição
             };
             if(categoriaAtual === "serie") {
                 movie.ep = document.getElementById('fEp').value;
@@ -387,6 +417,9 @@
         function fecharModalAdd() {
             document.getElementById('modal').style.display = 'none';
             document.getElementById('tmdbResults').style.display = 'none';
+            document.getElementById('tmdbRow').style.display = "flex";
+            document.getElementById('btnSalvarModal').innerText = "SALVAR NA NUVEM";
+            document.getElementById('fId').value = ""; // Limpa o ID
             document.getElementById('tmdbSearch').value = "";
             document.getElementById('fTitle').value = "";
             document.getElementById('fUrl').value = "";
