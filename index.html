@@ -3,443 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GORDINHO TV - Oficial</title>
+    <meta name="referrer" content="no-referrer">
+    <title>Gordinho Stream Elite 🎬</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #000; color: white; min-height: 100vh; overflow-x: hidden; }
+        body { background: #000; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        header { background: #000; padding: 15px; text-align: center; border-bottom: 2px solid #e50914; position: sticky; top: 0; z-index: 100; }
+        .logo { color: #e50914; font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; }
+        #searchInp { width: 90%; max-width: 500px; padding: 12px; border-radius: 20px; border: 1px solid #333; background: #111; color: white; outline: none; }
+        .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; padding: 20px; height: 85vh; overflow-y: auto; }
+        .movie-card { background: #111; border-radius: 8px; overflow: hidden; cursor: pointer; border: 1px solid #222; transition: 0.3s; }
+        .movie-card:hover { border-color: #e50914; transform: scale(1.05); }
+        .movie-card img { width: 100%; height: 200px; object-fit: cover; }
+        .movie-info { padding: 10px; font-size: 0.75rem; text-align: center; font-weight: bold; }
         
-        /* LOGIN */
-        #loginScreen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        .login-box { background: #141414; padding: 2rem; border-radius: 10px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #222; }
-        input, select, textarea { width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: #333; border: none; color: white; border-radius: 5px; }
-        .btn-red { width: 100%; padding: 1rem; background: #e50914; border: none; color: white; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        #playerOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: none; z-index: 1000; flex-direction: column; }
+        .player-header { background: #e50914; padding: 12px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: white; }
+        .controls { background: #111; padding: 10px; display: flex; gap: 10px; justify-content: center; border-bottom: 1px solid #333; flex-wrap: wrap; }
         
-        /* APP PRINCIPAL */
-        #mainApp { display: none; padding-top: 140px; }
-        header { background: rgba(0,0,0,0.95); padding: 1rem 0; position: fixed; top: 0; width: 100%; z-index: 1000; border-bottom: 1px solid #333; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
-        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        #searchBar { width: 100%; background: #222; border: 1px solid #444; padding: 12px; color: white; border-radius: 5px; }
+        select, .btn-sv { background: #e50914; color: white; border: none; padding: 8px 15px; border-radius: 5px; outline: none; font-weight: bold; cursor: pointer; }
+        .btn-sv { background: #333; }
 
-        .cat-container { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; padding: 0 1.5rem; }
-        .cat-box { flex: 1; max-width: 200px; height: 80px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; transition: 0.3s; border: 2px solid transparent; background: #222; }
-        .cat-active { background: #e50914 !important; border-color: white !important; }
-
-        .admin-only { display: none !important; }
-        .is-admin .admin-only { display: inline-block !important; }
-        
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 20px 0; }
-        .card { background: #181818; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #222; }
-        .card-info { padding: 15px; }
-        .play-btn { width: 100%; padding: 10px; background: white; color: black; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        
-        /* BOTÕES ADMIN NO CARD */
-        .admin-btns { position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 10; }
-        .del-btn { background: rgba(255,0,0,0.8); border: none; color: white; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 0.7rem; }
-        .edit-btn { background: rgba(255,165,0,0.8); border: none; color: white; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 0.7rem; }
-        
-        /* MODAL EPISÓDIOS */
-        #modalEpisodios { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.98); z-index:4000; flex-direction:column; }
-        .ep-header { background: #e50914; padding: 15px; text-align: center; position: relative; }
-        .ep-list-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #222; cursor: pointer; transition: 0.2s; }
-        .ep-list-item:hover { background: #1a1a1a; }
-        .play-icon { width: 35px; height: 35px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; margin-right: 15px; font-size: 0.8rem; }
-
-        .user-list { margin-top: 15px; background: #222; border-radius: 5px; max-height: 300px; overflow-y: auto; text-align: left; padding: 10px; }
-        .user-item { padding: 10px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        #videoOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; flex-direction: column; }
-        .player-header { padding: 15px; background: #141414; display: flex; justify-content: space-between; align-items: center; }
+        .iframe-container { flex-grow: 1; background: #000; display: flex; align-items: center; justify-content: center; position: relative; }
         iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
 
-    <div id="loginScreen">
-        <div class="login-box">
-            <h1 style="color:#e50914; margin-bottom:20px;">GORDINHO TV</h1>
-            <input type="text" id="user" placeholder="Usuário">
-            <input type="password" id="pass" placeholder="Senha">
-            <button class="btn-red" onclick="entrar()">ENTRAR</button>
-        </div>
-    </div>
-
-    <div id="mainApp">
-        <header>
-            <div class="container">
-                <div class="header-top">
-                    <div style="font-size: 1.5rem; font-weight: bold; color:#e50914;">GORDINHO TV</div>
-                    <div>
-                        <button class="admin-only" onclick="abrirModalUsers()" style="background:#333; color:#fff; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; margin-right:5px;">👥 USUÁRIOS</button>
-                        <button class="admin-only" id="btnAddMain" onclick="document.getElementById('modal').style.display='flex'" style="background:#e50914; color:#fff; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">+ ADD FILME</button>
-                        <button onclick="sair()" style="background:none; color:gray; border:none; padding:8px; cursor:pointer; font-size:0.8rem;">Sair</button>
-                    </div>
-                </div>
-                <input type="text" id="searchBar" placeholder="Pesquisar em Filmes e Séries..." onkeyup="escutarBanco()">
-            </div>
-        </header>
-
-        <div class="cat-container">
-            <div onclick="mudarCategoria('filme')" id="catFilme" class="cat-box cat-active">🎥 FILMES</div>
-            <div onclick="mudarCategoria('serie')" id="catSerie" class="cat-box">📺 SÉRIES</div>
-        </div>
-
-        <div class="container"><div id="grid" class="grid"></div></div>
-    </div>
-
-    <div id="modalEpisodios">
-        <div class="ep-header">
-            <h2 id="nomeSerieModal">NOME DA SÉRIE</h2>
-            <button onclick="fecharModalEps()" style="position:absolute; right:15px; top:12px; background:none; border:none; color:white; font-size:1.8rem; cursor:pointer;">&times;</button>
-        </div>
-        <div style="padding:10px; background:#111; display:flex; justify-content:center; border-bottom: 1px solid #222;">
-            <select id="selectTemporada" onchange="atualizarListaEps()" style="width:auto; min-width:200px; background:#222; border:1px solid #444; font-weight:bold;">
-                </select>
-        </div>
-        <div id="listaEpsContiner" style="flex:1; overflow-y:auto; background:#000;"></div>
-    </div>
-
-    <div id="modalUsers" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center;">
-        <div class="login-box" style="text-align: left; max-width: 450px;">
-            <h3 style="color:#e50914; margin-bottom:10px;">Gerenciar Acessos</h3>
-            <input type="text" id="newU" placeholder="Nome do Usuário">
-            <input type="text" id="newP" placeholder="Senha">
-            <div style="display: flex; gap: 10px;">
-                <input type="number" id="timeVal" placeholder="Valor" style="flex: 1;">
-                <select id="timeUnit" style="flex: 1.5;">
-                    <option value="min">Minutos</option>
-                    <option value="hor">Horas</option>
-                    <option value="dia" selected>Dias</option>
-                    <option value="mes">Meses</option>
-                </select>
-            </div>
-            <div id="admToggleOption" style="display:none; margin: 10px 0; align-items: center; gap: 10px; font-size: 0.9rem;">
-                <input type="checkbox" id="isAdmCheck" style="width: 20px; height: 20px;"> 
-                <span>Dar acesso de Administrador?</span>
-            </div>
-            <button class="btn-red" onclick="salvarUsuario()">CRIAR ACESSO</button>
-            <div class="user-list" id="listaU"></div>
-            <button onclick="fecharModalUsers()" style="width:100%; background:none; color:gray; border:none; margin-top:10px; cursor:pointer;">Fechar</button>
-        </div>
-    </div>
-
-    <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center;">
-        <div class="login-box" style="text-align: left;">
-            <h3 id="modalTitle" style="color:#e50914;">Novo Filme</h3>
-            <div id="tmdbRow" style="display: flex; gap: 5px;">
-                <input type="text" id="tmdbSearch" placeholder="Busque pelo nome aqui...">
-                <button onclick="buscarNoTMDB()" style="background: #e50914; color: white; border: none; padding: 0 15px; border-radius: 5px; cursor: pointer;">🔍</button>
-            </div>
-            <div id="tmdbResults" style="display:none; background:#222; margin-top:2px; border-radius:5px; max-height:150px; overflow-y:auto; border:1px solid #444; font-size:0.8rem;"></div>
-            
-            <input type="hidden" id="fId">
-            
-            <input type="text" id="fUrl" placeholder="Link do Filme/Série">
-            <input type="text" id="fTitle" placeholder="Título">
-            <div id="extraSerie" style="display:none; gap:10px;">
-                <input type="number" id="fEp" placeholder="Episódio">
-                <input type="number" id="fTemp" placeholder="Temporada">
-            </div>
-            <input type="hidden" id="fPoster">
-            <input type="number" id="fRating" placeholder="Nota (1-10)">
-            <textarea id="fDesc" placeholder="Sinopse" style="height: 100px;"></textarea>
-            <button class="btn-red" id="btnSalvarModal" onclick="salvarNoFirebase()">SALVAR NA NUVEM</button>
-            <button onclick="fecharModalAdd()" style="width:100%; background:none; color:gray; border:none; margin-top:10px; cursor:pointer;">Cancelar</button>
-        </div>
-    </div>
-
-    <div id="videoOverlay">
+    <div id="playerOverlay">
         <div class="player-header">
-            <span id="playingTitle" style="font-weight:bold;">Assistindo...</span>
-            <button onclick="fecharPlayer()" style="background:#e50914; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">FECHAR X</button>
+            <span id="displayTitle">ASSISTINDO</span>
+            <span style="cursor:pointer; padding: 5px 10px;" onclick="fecharPlayer()">✕ FECHAR</span>
         </div>
-        <div id="playerContent" style="width:100%; height:100%;"></div>
+        <div class="controls">
+            <div id="serieControls" style="display: none; gap: 10px;">
+                <select id="selectTemp" onchange="mudarTemporada()"></select>
+                <select id="selectEp" onchange="mudarEpisodio()"></select>
+            </div>
+            <button class="btn-sv" onclick="carregarVideo()">🔄 RECARREGAR PLAYER</button>
+        </div>
+        <div id="playerArea" class="iframe-container"></div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <header>
+        <div class="logo">GORDINHO STREAM (SOMENTE FILME)</div>
+        <input type="text" id="searchInp" placeholder="🔍 O que vamos assistir hoje?" onkeyup="buscar()">
+    </header>
+    <div class="movie-grid" id="grid"></div>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyAnzpPFdXKzmQbEOkAyY9Y1PJ1tl8cX5VA",
-            authDomain: "gordinhotv-25f29.firebaseapp.com",
-            databaseURL: "https://gordinhotv-25f29-default-rtdb.firebaseio.com",
-            projectId: "gordinhotv-25f29",
-            storageBucket: "gordinhotv-25f29.firebasestorage.app",
-            messagingSenderId: "416261508283",
-            appId: "1:416261508283:web:53960003c89a9df7de2d9e"
-        };
+<script>
+    const API_KEY = '8e6a4fe3b8b0c240511a0c5cc382ca81';
+    let currentId = '', currentType = '';
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const TMDB_KEY = "8e6a4fe3b8b0c240511a0c5cc382ca81";
+    async function carregarPopulares() {
+        const res = await fetch(`https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}&language=pt-BR`);
+        const data = await res.json();
+        exibirFilmes(data.results);
+    }
 
-        let userLogado = "";
-        let categoriaAtual = "filme";
-        let timerPainel = null;
-        let todosEpsDaSerie = [];
+    async function buscar() {
+        const q = document.getElementById('searchInp').value;
+        if(q.length < 3) return q.length == 0 && carregarPopulares();
+        const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&language=pt-BR&query=${q}`);
+        const data = await res.json();
+        exibirFilmes(data.results);
+    }
 
-        function mudarCategoria(cat) {
-            categoriaAtual = cat;
-            document.getElementById('catFilme').classList.toggle('cat-active', cat === 'filme');
-            document.getElementById('catSerie').classList.toggle('cat-active', cat === 'serie');
-            const btnAdd = document.getElementById('btnAddMain');
-            const modalTitle = document.getElementById('modalTitle');
-            const extraSerie = document.getElementById('extraSerie');
-            if(cat === 'serie') {
-                btnAdd.innerText = "+ ADD SÉRIE";
-                modalTitle.innerText = "Nova Série";
-                extraSerie.style.display = "flex";
-            } else {
-                btnAdd.innerText = "+ ADD FILME";
-                modalTitle.innerText = "Novo Filme";
-                extraSerie.style.display = "none";
-            }
-            escutarBanco();
+    function exibirFilmes(itens) {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = "";
+        itens.forEach(item => {
+            if(!item.poster_path) return;
+            const card = document.createElement('div');
+            card.className = 'movie-card';
+            const tipo = item.media_type || (item.first_air_date ? 'tv' : 'movie');
+            card.onclick = () => abrirPlayer(item.id, item.title || item.name, tipo);
+            card.innerHTML = `<img src="https://image.tmdb.org/t/p/w300${item.poster_path}"><div class="movie-info">${item.title || item.name}</div>`;
+            grid.appendChild(card);
+        });
+    }
+
+    async function abrirPlayer(id, titulo, tipo) {
+        currentId = id; currentType = tipo;
+        document.getElementById('playerOverlay').style.display = "flex";
+        document.getElementById('displayTitle').innerText = titulo.toUpperCase();
+        if(tipo === 'tv') {
+            document.getElementById('serieControls').style.display = "flex";
+            await carregarTemporadas(id);
+        } else {
+            document.getElementById('serieControls').style.display = "none";
+            carregarVideo();
         }
+    }
 
-        async function buscarNoTMDB() {
-            const query = document.getElementById('tmdbSearch').value;
-            const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`;
-            try {
-                const res = await fetch(url);
-                const data = await res.json();
-                const lista = document.getElementById('tmdbResults');
-                lista.innerHTML = "";
-                if (data.results) {
-                    lista.style.display = "block";
-                    data.results.forEach(f => {
-                        const dataLancamento = f.release_date || f.first_air_date || "";
-                        const ano = dataLancamento ? ` (${dataLancamento.split('-')[0]})` : "";
-                        const nomeCompleto = (f.title || f.name) + ano;
-                        const item = document.createElement('div');
-                        item.style = "padding:10px; border-bottom:1px solid #333; cursor:pointer;";
-                        item.innerHTML = `<strong>${nomeCompleto}</strong>`;
-                        item.onclick = () => {
-                            document.getElementById('fTitle').value = (f.title || f.name);
-                            document.getElementById('fRating').value = f.vote_average ? f.vote_average.toFixed(1) : "0";
-                            document.getElementById('fDesc').value = f.overview;
-                            document.getElementById('fPoster').value = f.poster_path ? `https://image.tmdb.org/t/p/w500${f.poster_path}` : "";
-                            lista.style.display = "none";
-                            document.getElementById('tmdbSearch').value = nomeCompleto;
-                        };
-                        lista.appendChild(item);
-                    });
-                }
-            } catch (e) { console.error(e); }
-        }
+    async function carregarTemporadas(id) {
+        const res = await fetch(`https://api.themoviedb.org/3/tv/${id}?api_key=${API_KEY}&language=pt-BR`);
+        const data = await res.json();
+        const st = document.getElementById('selectTemp');
+        st.innerHTML = "";
+        data.seasons.forEach(s => {
+            if(s.season_number === 0) return;
+            let o = document.createElement('option');
+            o.value = s.season_number; o.innerText = `Temp ${s.season_number}`;
+            st.appendChild(o);
+        });
+        await mudarTemporada();
+    }
 
-        function entrar() {
-            const u = document.getElementById('user').value.trim();
-            const p = document.getElementById('pass').value.trim();
-            if (u === "Miguel" && (p === "260711" || p === "123")) {
-                userLogado = "Miguel"; carregarApp(true); return;
-            }
-            db.ref('usuarios').once('value').then((snap) => {
-                const users = snap.val();
-                let uId = null, dadosUser = null;
-                if (users) Object.keys(users).forEach(key => {
-                    if (users[key].nome === u && users[key].senha === p) { uId = key; dadosUser = users[key]; }
-                });
-                if (uId && dadosUser) {
-                    if (Date.now() > dadosUser.expiraEm) return alert("Acesso expirado!");
-                    userLogado = u; carregarApp(dadosUser.isAdmin);
-                } else alert("Incorreto!");
-            });
-        }
+    async function mudarTemporada() {
+        const t = document.getElementById('selectTemp').value;
+        const res = await fetch(`https://api.themoviedb.org/3/tv/${currentId}/season/${t}?api_key=${API_KEY}&language=pt-BR`);
+        const data = await res.json();
+        const se = document.getElementById('selectEp');
+        se.innerHTML = "";
+        data.episodes.forEach(e => {
+            let o = document.createElement('option');
+            o.value = e.episode_number; o.innerText = `Ep ${e.episode_number}`;
+            se.appendChild(o);
+        });
+        carregarVideo();
+    }
 
-        function carregarApp(isAdmin) {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'block';
-            if(isAdmin) document.getElementById('mainApp').classList.add('is-admin');
-            if(userLogado === "Miguel") document.getElementById('admToggleOption').style.display = 'flex';
-            escutarBanco();
-        }
+    function mudarEpisodio() {
+        carregarVideo();
+    }
 
-        function escutarBanco() {
-            const termo = document.getElementById('searchBar').value.toLowerCase();
-            db.ref('filmes').on('value', (snap) => {
-                const grid = document.getElementById('grid');
-                grid.innerHTML = "";
-                const data = snap.val();
-                if(data) {
-                    const seriesJaAdd = [];
-                    Object.values(data).reverse().forEach(m => {
-                        const tipoItem = m.tipo || "filme";
-                        const tituloNormal = m.title.toLowerCase();
-                        if(termo !== "" && !tituloNormal.includes(termo)) return;
-                        if(termo === "" && tipoItem !== categoriaAtual) return;
-
-                        if(tipoItem === 'serie') {
-                            if(seriesJaAdd.includes(m.title)) return;
-                            seriesJaAdd.push(m.title);
-                        }
-
-                        grid.innerHTML += `
-                            <div class="card">
-                                ${(userLogado === "Miguel") ? `
-                                    <div class="admin-btns">
-                                        ${tipoItem === 'filme' ? `<button class="edit-btn" onclick="editarFilme('${m.id}')">Editar</button>` : ''}
-                                        <button class="del-btn" onclick="db.ref('filmes/${m.id}').remove()">Excluir</button>
-                                    </div>
-                                ` : ''}
-                                <div style="height:150px; background: url('${m.poster || ''}') center/cover no-repeat; background-color:#222; display:flex; align-items:center; justify-content:center;">
-                                    ${!m.poster ? '🎬' : ''}
-                                </div>
-                                <div class="card-info">
-                                    <div class="card-title">${m.title}</div>
-                                    <div style="font-size:0.8rem; color:#e50914; font-weight:bold;">
-                                        ${tipoItem === 'serie' ? 'SÉRIE' : `⭐ ${m.rating}/10`}
-                                    </div>
-                                    <p style="font-size:0.8rem; color:#aaa; margin-top:5px;">${m.desc}</p>
-                                    <button class="play-btn" onclick="${tipoItem === 'serie' ? `abrirListaEps('${m.title}')` : `abrirPlayer('${m.url}', '${m.title}')`}">
-                                        ${tipoItem === 'serie' ? 'VER EPISÓDIOS' : 'ASSISTIR AGORA'}
-                                    </button>
-                                </div>
-                            </div>`;
-                    });
-                }
-            });
-        }
-
-        // --- FUNÇÃO PARA CARREGAR EDIÇÃO ---
-        function editarFilme(id) {
-            db.ref('filmes/' + id).once('value').then(snap => {
-                const m = snap.val();
-                if(m) {
-                    document.getElementById('modal').style.display = 'flex';
-                    document.getElementById('modalTitle').innerText = "Editar Filme";
-                    document.getElementById('fId').value = id;
-                    document.getElementById('fTitle').value = m.title;
-                    document.getElementById('fUrl').value = m.url;
-                    document.getElementById('fRating').value = m.rating;
-                    document.getElementById('fDesc').value = m.desc;
-                    document.getElementById('fPoster').value = m.poster;
-                    document.getElementById('tmdbRow').style.display = "none"; // Esconde busca TMDB na edição
-                    document.getElementById('btnSalvarModal').innerText = "ATUALIZAR DADOS";
-                }
-            });
-        }
-
-        function abrirListaEps(nomeSerie) {
-            document.getElementById('nomeSerieModal').innerText = nomeSerie.toUpperCase();
-            document.getElementById('modalEpisodios').style.display = 'flex';
-            db.ref('filmes').once('value', (snap) => {
-                const data = snap.val();
-            if(!data) return;
-                todosEpsDaSerie = Object.values(data).filter(item => item.tipo === 'serie' && item.title === nomeSerie);
-                const temps = [...new Set(todosEpsDaSerie.map(item => item.temp))].sort((a,b) => a-b);
-                const select = document.getElementById('selectTemporada');
-                select.innerHTML = "";
-                temps.forEach(t => { select.innerHTML += `<option value="${t}">TEMPORADA ${t}</option>`; });
-                atualizarListaEps();
-            });
-        }
-
-        function atualizarListaEps() {
-            const tempEscolhida = document.getElementById('selectTemporada').value;
-            const container = document.getElementById('listaEpsContiner');
-            container.innerHTML = "";
-            const epsFiltrados = todosEpsDaSerie.filter(e => e.temp == tempEscolhida).sort((a, b) => a.ep - b.ep);
-            epsFiltrados.forEach(e => {
-                container.innerHTML += `
-                    <div class="ep-list-item" onclick="abrirPlayer('${e.url}', '${e.title} - T${e.temp} E${e.ep}')">
-                        <div class="play-icon">▶</div>
-                        <div>
-                            <div style="font-weight:bold;">Episódio ${String(e.ep).padStart(2, '0')}</div>
-                            <div style="font-size:0.7rem; color:gray;">Toque para reproduzir</div>
-                        </div>
-                    </div>`;
-            });
-        }
-
-        function fecharModalEps() { document.getElementById('modalEpisodios').style.display = 'none'; }
+    function carregarVideo() {
+        const s = document.getElementById('selectTemp').value || 1;
+        const e = document.getElementById('selectEp').value || 1;
         
-        function salvarUsuario() {
-            const nome = document.getElementById('newU').value;
-            const senha = document.getElementById('newP').value;
-            const val = parseInt(document.getElementById('timeVal').value);
-            const unit = document.getElementById('timeUnit').value;
-            if(!nome || !senha || isNaN(val)) return alert("Preencha tudo!");
-            let ms = val * 1000;
-            if(unit === "min") ms *= 60;
-            if(unit === "hor") ms *= 3600;
-            if(unit === "dia") ms *= 86400;
-            if(unit === "mes") ms *= 86400 * 30;
-            db.ref('usuarios').push({ nome, senha, expiraEm: Date.now() + ms, isAdmin: document.getElementById('isAdmCheck').checked });
-            alert("Acesso Criado!");
-            document.getElementById('newU').value = ""; document.getElementById('newP').value = "";
+        let url = "";
+        if (currentType === 'movie') {
+            // URL Direta para Filmes
+            url = `https://warezcdn.site/filme/${currentId}`;
+        } else {
+            // URL Direta para Séries (id-temporada-episodio)
+            url = `https://warezcdn.site/serie/${currentId}-${s}-${e}`;
         }
+        
+        const area = document.getElementById('playerArea');
+        // Adicionando um pequeno delay para garantir a limpeza do iframe
+        area.innerHTML = "";
+        setTimeout(() => {
+            area.innerHTML = `<iframe src="${url}" allowfullscreen allow="autoplay; encrypted-media" referrerpolicy="no-referrer"></iframe>`;
+        }, 50);
+    }
 
-        function abrirModalUsers() {
-            document.getElementById('modalUsers').style.display = 'flex';
-            if(timerPainel) clearInterval(timerPainel);
-            timerPainel = setInterval(() => {
-                db.ref('usuarios').once('value', (snap) => {
-                    const lista = document.getElementById('listaU');
-                    lista.innerHTML = "";
-                    const data = snap.val();
-                    if(data) {
-                        Object.keys(data).forEach(id => {
-                            let ms = data[id].expiraEm - Date.now();
-                            let tempo = ms <= 0 ? "EXPIRADO" : `${Math.floor(ms/86400000)}D ${Math.floor((ms%86400000)/3600000)}H`;
-                            lista.innerHTML += `
-                                <div class="user-item">
-                                    <div><strong>${data[id].nome}</strong><br><small>${tempo}</small></div>
-                                    <button onclick="db.ref('usuarios/${id}').remove()" style="color:red; background:none; border:none; cursor:pointer;">Remover</button>
-                                </div>`;
-                        });
-                    }
-                });
-            }, 1500);
-        }
+    function fecharPlayer() {
+        document.getElementById('playerOverlay').style.display = "none";
+        document.getElementById('playerArea').innerHTML = "";
+    }
 
-        function fecharModalUsers() { document.getElementById('modalUsers').style.display = 'none'; clearInterval(timerPainel); }
-
-        function salvarNoFirebase() {
-            const idExistente = document.getElementById('fId').value;
-            const movie = { 
-                title: document.getElementById('fTitle').value, 
-                url: document.getElementById('fUrl').value, 
-                rating: document.getElementById('fRating').value, 
-                desc: document.getElementById('fDesc').value, 
-                poster: document.getElementById('fPoster').value || "",
-                tipo: categoriaAtual,
-                id: idExistente ? idExistente : Date.now() // Usa o ID antigo se for edição
-            };
-            if(categoriaAtual === "serie") {
-                movie.ep = document.getElementById('fEp').value;
-                movie.temp = document.getElementById('fTemp').value;
-            }
-            db.ref('filmes/' + movie.id).set(movie);
-            fecharModalAdd();
-        }
-
-        function fecharModalAdd() {
-            document.getElementById('modal').style.display = 'none';
-            document.getElementById('tmdbResults').style.display = 'none';
-            document.getElementById('tmdbRow').style.display = "flex";
-            document.getElementById('btnSalvarModal').innerText = "SALVAR NA NUVEM";
-            document.getElementById('fId').value = ""; // Limpa o ID
-            document.getElementById('tmdbSearch').value = "";
-            document.getElementById('fTitle').value = "";
-            document.getElementById('fUrl').value = "";
-            document.getElementById('fRating').value = "";
-            document.getElementById('fDesc').value = "";
-            document.getElementById('fPoster').value = "";
-            if(document.getElementById('fEp')) document.getElementById('fEp').value = "";
-            if(document.getElementById('fTemp')) document.getElementById('fTemp').value = "";
-        }
-
-        function abrirPlayer(url, titulo) {
-            let finalUrl = url;
-            if(url.includes('streamtape.com')) finalUrl = url.replace('/v/', '/e/').split('?')[0];
-            document.getElementById('playingTitle').innerText = titulo;
-            document.getElementById('playerContent').innerHTML = `<iframe src="${finalUrl}" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
-            document.getElementById('videoOverlay').style.display = 'flex';
-        }
-
-        function fecharPlayer() { document.getElementById('playerContent').innerHTML = ""; document.getElementById('videoOverlay').style.display = 'none'; }
-        function sair() { location.reload(); }
-    </script>
+    carregarPopulares();
+</script>
 </body>
 </html>
