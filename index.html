@@ -10,6 +10,17 @@
         body { background: var(--bg-color); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
         
         header { padding: 20px; text-align: center; background: #000; border-bottom: 2px solid var(--main-color); position: sticky; top: 0; z-index: 100; }
+        
+        /* Estilo do novo texto abaixo do título */
+        .subtitle { 
+            color: #888; 
+            font-size: 14px; 
+            margin-top: -10px; 
+            margin-bottom: 15px; 
+            font-weight: normal; 
+            letter-spacing: 1px;
+        }
+
         .search-container { margin: 20px 0; }
         input { padding: 12px; width: 60%; border-radius: 5px; border: none; background: #222; color: white; outline: none; }
         button { padding: 12px 20px; background: var(--main-color); color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; }
@@ -42,14 +53,36 @@
             justify-content: center;
             align-items: center;
         }
-        /* Estilo responsivo para o Iframe baseado na documentação que você enviou */
+
         .video-wrapper {
-            width: 95%;
+            width: 98%;
             max-width: 1000px;
-            aspect-ratio: 16 / 9;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden; /* Corta o que sobrar */
             background: #000;
         }
-        iframe { width: 100%; height: 100%; border: none; }
+
+        /* Truque para esconder o embedmovies.org no canto superior */
+        .video-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 180px; /* Largura para cobrir o texto */
+            height: 40px;  /* Altura da marca d'água */
+            background: black; 
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        iframe { 
+            width: 100% !important; 
+            height: auto !important; 
+            aspect-ratio: 16 / 9; 
+            border: none; 
+        }
+
         .close-btn { margin-bottom: 15px; padding: 10px 25px; background: var(--main-color); color: white; border: none; cursor: pointer; border-radius: 50px; font-weight: bold; }
     </style>
 </head>
@@ -57,8 +90,10 @@
 
 <header>
     <h1>GORDINHO STREAM</h1>
+    <p class="subtitle">O melhor do cinema na palma da sua mão</p>
+    
     <div class="search-container">
-        <input type="text" id="searchInput" placeholder="Busque um filme ou série no TMDB...">
+        <input type="text" id="searchInput" placeholder="Busque um filme ou série...">
         <button onclick="searchContent()">BUSCAR</button>
     </div>
 </header>
@@ -74,7 +109,6 @@
     const API_KEY = '8e6a4fe3b8b0c240511a0c5cc382ca81';
     const grid = document.getElementById('movieGrid');
 
-    // Carrega populares (Filmes por padrão)
     async function loadPopular() {
         const url = `https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}&language=pt-BR`;
         fetchData(url);
@@ -84,7 +118,6 @@
         const query = document.getElementById('searchInput').value;
         if(!query) return;
         grid.innerHTML = "<p>Buscando...</p>";
-        // Busca multi-meios (filmes e séries juntos)
         const url = `https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&language=pt-BR&query=${query}`;
         fetchData(url);
     }
@@ -97,18 +130,14 @@
             
             data.results.forEach(item => {
                 if(!item.poster_path) return;
-                
                 const isTV = item.media_type === 'tv' || !item.release_date;
                 const title = item.title || item.name;
-                
                 const card = document.createElement('div');
                 card.className = 'movie-card';
                 card.innerHTML = `
                     <img src="https://image.tmdb.org/t/p/w500${item.poster_path}">
                     <div class="movie-info">${title}</div>
                 `;
-                
-                // Passa o ID e se é série ou filme para a função de player
                 card.onclick = () => openPlayer(item.id, isTV);
                 grid.appendChild(card);
             });
@@ -118,16 +147,12 @@
     }
 
     function openPlayer(id, isTV) {
-        // Baseado na sua imagem da documentação:
-        // Filme: https://myembed.biz/filme/{id}
-        // Série: https://myembed.biz/serie/{id}
         const type = isTV ? 'serie' : 'filme';
         const videoSource = `https://myembed.biz/${type}/${id}`; 
 
         document.getElementById('player-overlay').style.display = 'flex';
         const container = document.getElementById('video-content');
         
-        // Sem o atributo 'sandbox' para garantir que o player da EmbedMovies carregue 100%
         container.innerHTML = `
             <iframe 
                 src="${videoSource}" 
