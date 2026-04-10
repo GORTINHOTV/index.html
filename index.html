@@ -1,186 +1,150 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="referrer" content="no-referrer">
-    <title>Gordinho Stream Elite 🎬</title>
+    <title>Gordinho Stream | EmbedMovies</title>
+    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        header { background: #000; padding: 15px; text-align: center; border-bottom: 2px solid #e50914; position: sticky; top: 0; z-index: 100; }
-        .logo { color: #e50914; font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; }
-        #searchInp { width: 90%; max-width: 500px; padding: 12px; border-radius: 20px; border: 1px solid #333; background: #111; color: white; outline: none; }
+        :root { --main-color: #e50914; --bg-color: #050505; }
+        body { background: var(--bg-color); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
         
-        /* AJUSTE NO GRID */
-        .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 20px 15px; padding: 20px; height: 85vh; overflow-y: auto; }
-        
-        /* AJUSTE NO CARD: Fundo transparente e flex para alinhar o título embaixo */
-        .movie-card { background: transparent; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; }
-        .movie-card:hover { transform: scale(1.05); }
-        
-        /* AJUSTE NA IMAGEM: Quadrada e com borda arredondada igual à foto */
-        .movie-card img { 
-            width: 100%; 
-            height: auto; 
-            aspect-ratio: 1 / 1; 
-            object-fit: contain; 
-            background: #111; 
-            border-radius: 15px; 
-            border: 1px solid #222; 
-            display: block; 
-        }
+        header { padding: 20px; text-align: center; background: #000; border-bottom: 2px solid var(--main-color); position: sticky; top: 0; z-index: 100; }
+        .search-container { margin: 20px 0; }
+        input { padding: 12px; width: 60%; border-radius: 5px; border: none; background: #222; color: white; outline: none; }
+        button { padding: 12px 20px; background: var(--main-color); color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; }
 
-        /* AJUSTE NO TÍTULO: Texto centralizado logo abaixo da imagem */
-        .movie-info { 
-            padding: 8px 2px 0 2px; 
-            font-size: 0.75rem; 
-            text-align: center; 
-            font-weight: bold; 
-            color: #fff;
-            width: 100%;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+            padding: 20px;
+        }
+        .movie-card {
+            cursor: pointer;
+            transition: 0.3s;
+            background: #111;
+            border-radius: 10px;
             overflow: hidden;
+            border: 1px solid #222;
         }
-        
-        #playerOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: none; z-index: 1000; flex-direction: column; }
-        .player-header { background: #e50914; padding: 12px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: white; }
-        .controls { background: #111; padding: 10px; display: flex; gap: 10px; justify-content: center; border-bottom: 1px solid #333; flex-wrap: wrap; }
-        
-        select, .btn-sv { background: #e50914; color: white; border: none; padding: 8px 15px; border-radius: 5px; outline: none; font-weight: bold; cursor: pointer; }
-        .btn-sv { background: #333; }
+        .movie-card:hover { transform: scale(1.05); border: 1px solid var(--main-color); }
+        .movie-card img { width: 100%; display: block; }
+        .movie-info { padding: 10px; font-size: 13px; text-align: center; font-weight: bold; }
 
-        .iframe-container { flex-grow: 1; background: #000; display: flex; align-items: center; justify-content: center; position: relative; }
+        #player-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        /* Estilo responsivo para o Iframe baseado na documentação que você enviou */
+        .video-wrapper {
+            width: 95%;
+            max-width: 1000px;
+            aspect-ratio: 16 / 9;
+            background: #000;
+        }
         iframe { width: 100%; height: 100%; border: none; }
+        .close-btn { margin-bottom: 15px; padding: 10px 25px; background: var(--main-color); color: white; border: none; cursor: pointer; border-radius: 50px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="playerOverlay">
-        <div class="player-header">
-            <span id="displayTitle">ASSISTINDO</span>
-            <span style="cursor:pointer; padding: 5px 10px;" onclick="fecharPlayer()">✕ FECHAR</span>
-        </div>
-        <div class="controls">
-            <div id="serieControls" style="display: none; gap: 10px;">
-                <select id="selectTemp" onchange="mudarTemporada()"></select>
-                <select id="selectEp" onchange="mudarEpisodio()"></select>
-            </div>
-            <button class="btn-sv" onclick="carregarVideo()">🔄 RECARREGAR PLAYER</button>
-        </div>
-        <div id="playerArea" class="iframe-container"></div>
+<header>
+    <h1>GORDINHO STREAM</h1>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Busque um filme ou série no TMDB...">
+        <button onclick="searchContent()">BUSCAR</button>
     </div>
+</header>
 
-    <header>
-        <div class="logo">GORDINHO STREAM (SOMENTE FILME)</div>
-        <input type="text" id="searchInp" placeholder="🔍 O que vamos assistir hoje?" onkeyup="buscar()">
-    </header>
-    <div class="movie-grid" id="grid"></div>
+<div class="movie-grid" id="movieGrid"></div>
+
+<div id="player-overlay">
+    <button class="close-btn" onclick="closePlayer()">FECHAR X</button>
+    <div id="video-content" class="video-wrapper"></div>
+</div>
 
 <script>
     const API_KEY = '8e6a4fe3b8b0c240511a0c5cc382ca81';
-    let currentId = '', currentType = '';
+    const grid = document.getElementById('movieGrid');
 
-    async function carregarPopulares() {
-        const res = await fetch(`https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}&language=pt-BR`);
-        const data = await res.json();
-        exibirFilmes(data.results);
+    // Carrega populares (Filmes por padrão)
+    async function loadPopular() {
+        const url = `https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}&language=pt-BR`;
+        fetchData(url);
     }
 
-    async function buscar() {
-        const q = document.getElementById('searchInp').value;
-        if(q.length < 3) return q.length == 0 && carregarPopulares();
-        const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&language=pt-BR&query=${q}`);
-        const data = await res.json();
-        exibirFilmes(data.results);
+    async function searchContent() {
+        const query = document.getElementById('searchInput').value;
+        if(!query) return;
+        grid.innerHTML = "<p>Buscando...</p>";
+        // Busca multi-meios (filmes e séries juntos)
+        const url = `https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&language=pt-BR&query=${query}`;
+        fetchData(url);
     }
 
-    function exibirFilmes(itens) {
-        const grid = document.getElementById('grid');
-        grid.innerHTML = "";
-        itens.forEach(item => {
-            if(!item.poster_path) return;
-            const card = document.createElement('div');
-            card.className = 'movie-card';
-            const tipo = item.media_type || (item.first_air_date ? 'tv' : 'movie');
-            card.onclick = () => abrirPlayer(item.id, item.title || item.name, tipo);
-            // Mantive seu código original aqui, só a tag de fechar a div que organizei
-            card.innerHTML = `<img src="https://image.tmdb.org/t/p/w300${item.poster_path}"><div class="movie-info">${item.title || item.name}</div>`;
-            grid.appendChild(card);
-        });
-    }
-
-    async function abrirPlayer(id, titulo, tipo) {
-        currentId = id; currentType = tipo;
-        document.getElementById('playerOverlay').style.display = "flex";
-        document.getElementById('displayTitle').innerText = titulo.toUpperCase();
-        if(tipo === 'tv') {
-            document.getElementById('serieControls').style.display = "flex";
-            await carregarTemporadas(id);
-        } else {
-            document.getElementById('serieControls').style.display = "none";
-            carregarVideo();
+    async function fetchData(url) {
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            grid.innerHTML = "";
+            
+            data.results.forEach(item => {
+                if(!item.poster_path) return;
+                
+                const isTV = item.media_type === 'tv' || !item.release_date;
+                const title = item.title || item.name;
+                
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                card.innerHTML = `
+                    <img src="https://image.tmdb.org/t/p/w500${item.poster_path}">
+                    <div class="movie-info">${title}</div>
+                `;
+                
+                // Passa o ID e se é série ou filme para a função de player
+                card.onclick = () => openPlayer(item.id, isTV);
+                grid.appendChild(card);
+            });
+        } catch (error) {
+            grid.innerHTML = "<p>Erro ao conectar com o TMDB.</p>";
         }
     }
 
-    async function carregarTemporadas(id) {
-        const res = await fetch(`https://api.themoviedb.org/3/tv/${id}?api_key=${API_KEY}&language=pt-BR`);
-        const data = await res.json();
-        const st = document.getElementById('selectTemp');
-        st.innerHTML = "";
-        data.seasons.forEach(s => {
-            if(s.season_number === 0) return;
-            let o = document.createElement('option');
-            o.value = s.season_number; o.innerText = `Temp ${s.season_number}`;
-            st.appendChild(o);
-        });
-        await mudarTemporada();
-    }
+    function openPlayer(id, isTV) {
+        // Baseado na sua imagem da documentação:
+        // Filme: https://myembed.biz/filme/{id}
+        // Série: https://myembed.biz/serie/{id}
+        const type = isTV ? 'serie' : 'filme';
+        const videoSource = `https://myembed.biz/${type}/${id}`; 
 
-    async function mudarTemporada() {
-        const t = document.getElementById('selectTemp').value;
-        const res = await fetch(`https://api.themoviedb.org/3/tv/${currentId}/season/${t}?api_key=${API_KEY}&language=pt-BR`);
-        const data = await res.json();
-        const se = document.getElementById('selectEp');
-        se.innerHTML = "";
-        data.episodes.forEach(e => {
-            let o = document.createElement('option');
-            o.value = e.episode_number; o.innerText = `Ep ${e.episode_number}`;
-            se.appendChild(o);
-        });
-        carregarVideo();
-    }
-
-    function mudarEpisodio() {
-        carregarVideo();
-    }
-
-    function carregarVideo() {
-        const s = document.getElementById('selectTemp').value || 1;
-        const e = document.getElementById('selectEp').value || 1;
+        document.getElementById('player-overlay').style.display = 'flex';
+        const container = document.getElementById('video-content');
         
-        let url = "";
-        if (currentType === 'movie') {
-            url = `https://warezcdn.site/filme/${currentId}`;
-        } else {
-            url = `https://warezcdn.site/serie/${currentId}-${s}-${e}`;
-        }
-        
-        const area = document.getElementById('playerArea');
-        area.innerHTML = "";
-        setTimeout(() => {
-            area.innerHTML = `<iframe src="${url}" allowfullscreen allow="autoplay; encrypted-media" referrerpolicy="no-referrer"></iframe>`;
-        }, 50);
+        // Sem o atributo 'sandbox' para garantir que o player da EmbedMovies carregue 100%
+        container.innerHTML = `
+            <iframe 
+                src="${videoSource}" 
+                allowfullscreen 
+                scrolling="no"
+                loading="lazy">
+            </iframe>
+        `;
     }
 
-    function fecharPlayer() {
-        document.getElementById('playerOverlay').style.display = "none";
-        document.getElementById('playerArea').innerHTML = "";
+    function closePlayer() {
+        document.getElementById('video-content').innerHTML = ""; 
+        document.getElementById('player-overlay').style.display = 'none';
     }
 
-    carregarPopulares();
+    loadPopular();
 </script>
+
 </body>
 </html>
